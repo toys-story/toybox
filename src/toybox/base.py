@@ -33,14 +33,20 @@ class baseTrader():
         
 if __name__ == '__main__':
     bt = baseTrader()
-    data = get_data(bt.client, market="KRW-SAND",from_date=[2021, 11, 25, 8, 0, 0])
+    data = get_data(bt.client, market="KRW-ETH",from_date=[2021, 11, 27, 0, 0, 0])
     print(f"data : {len(data)} EA")
     
-    stds = get_std(data=data)    
-    capital = 1000000
+    stds = get_std(data=data)
+    capital = 100000000
     stock = 0
+    amount_stock = 0.5
+    comission = 0
     buy_lines = 0
     sell_lines = 0
+    print(f"Hclose by open : {stds['Hclose_by_open']}")
+    print(f"Htail by close : {stds['Htail_by_close']}")
+    print(f"Lclose_by_open : {stds['Lclose_by_open']}")
+    print(f"Ltail_by_close : {stds['Ltail_by_close']}")
     for d in data:
         open = float(d.get("opening_price", ""))
         close = float(d.get("trade_price", ""))
@@ -51,7 +57,7 @@ if __name__ == '__main__':
             close_var = (close - open) / open * 100
             var = ((high - open) / open) * 100
             var -= close_var
-        elif close - open < 0:
+        elif close - open <= 0:
             close_var = (close - open) / open * (-100)
             var = ((low - open) / open) * (-100)
             var -= close_var
@@ -65,14 +71,20 @@ if __name__ == '__main__':
             stds["Lclose_by_open"] * 100,
             stds["Ltail_by_close"] * 100,
         ]
-        if close_var >= buy_conditions[0] and var <= buy_conditions[1]:
-            stock += 1
-            capital -= close
+        if close-open > 0 and close_var >= buy_conditions[0] and var <= buy_conditions[1]:
+            buy_amount = capital * amount_stock // close
+            stock += buy_amount
+            buy_money = close * buy_amount
+            capital -= buy_money
+            comission += (buy_money * 0.0005)
             print(f"{result}, Buy {close}, stock : {stock}, capital : {capital}")
-        if close_var >= sell_conditions[0] and var <= sell_conditions[1]:
+        elif close_var >= sell_conditions[0]:
             if stock > 0:
-                capital += (stock * close)
+                sell_money = stock * close
+                capital += sell_money
                 stock = 0
+                comission += (sell_money * 0.0005)
                 print(f"{result}, Sell {close} stock : {stock}, capital : {capital}")    
     capital += (close * stock)
     print(f"capital = {capital}")
+    print(f"comission = {comission}")
