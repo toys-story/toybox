@@ -1,9 +1,13 @@
-from upbit.client import Upbit
+from toybox.src.toybox.decorator import logging
 import requests
 import datetime
-import json
 import time
 import numpy as np
+
+@logging
+def call_restapi(type="GET", url="", headers={}) -> dict:
+    return requests.request(type, url, headers=headers).json()
+
 
 def get_data(client=None, market="KRW-BTC", type="minutes", from_date=[2021, 1, 1, 0, 0, 0], to_date=""):
     """
@@ -31,6 +35,9 @@ def get_data(client=None, market="KRW-BTC", type="minutes", from_date=[2021, 1, 
     
     time_cursor = datetime.datetime(from_date[0], from_date[1], from_date[2], from_date[3], from_date[4], from_date[5],tzinfo=datetime.timezone.utc)
     time_now = datetime.datetime.now(datetime.timezone.utc)
+
+    if time_now < time_cursor:
+        raise Exception(f"invalid time, UTC : {time_cursor}")
     while time_cursor < time_now:
         count = 0
         temp_ret = list()
@@ -44,9 +51,8 @@ def get_data(client=None, market="KRW-BTC", type="minutes", from_date=[2021, 1, 
         
         while not check_can_call(client=client):
             time.sleep(1)
-    
-        response = requests.request("GET", url, headers=headers).json()
-        print("call rest api !")
+
+        response = call_restapi(type="GET", url=url, headers=headers)
         
         for i in response:
             temp_ret.append(i)
